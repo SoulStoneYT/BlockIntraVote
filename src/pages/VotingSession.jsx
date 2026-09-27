@@ -2,11 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { db, auth } from "../firebase";
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { Pause, AlertTriangle, Clock, ShieldCheck } from "lucide-react";
 import ElectionTimer from "../components/ElectionTimer";
 import CandidateCard from "../components/CandidateCard";
 import useNotification from "../hooks/useNotification";
 import blockchainService from "../blockchain/blockchainService";
-
 
 const TOTAL_TIME = 600; // 10 minutes in seconds
 
@@ -17,6 +17,7 @@ export default function VotingSession() {
   const [remainingTime, setRemainingTime] = useState(TOTAL_TIME);
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(false);
+  const [votedCandidateId, setVotedCandidateId] = useState(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isEnded, setIsEnded] = useState(false);
   const navigate = useNavigate();
@@ -40,17 +41,14 @@ export default function VotingSession() {
       if (docSnap.exists()) {
         const status = docSnap.data().electionStatus;
         
-        // Handle pause immediately
         if (status === "paused") {
           setIsPaused(true);
         } else if (status === "active") {
           setIsPaused(false);
         }
         
-        // Handle end - but don't redirect immediately, let voters finish
         if (status === "ended") {
           setIsEnded(true);
-          // Don't set isPaused - voters should still be able to vote until timer expires
         }
       }
     });
@@ -100,7 +98,6 @@ export default function VotingSession() {
         const remaining = TOTAL_TIME - elapsed;
 
         if (remaining <= 0) {
-          // Time expired
           await updateDoc(docRef, {
             votingSessionCompleted: true
           });
@@ -115,14 +112,16 @@ export default function VotingSession() {
       const positionsQuery = query(collection(db, "positions"), where("isActive", "==", true));
       const positionsSnapshot = await getDocs(positionsQuery);
       
-      const positionsData = positionsSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      const positionsData = positionsSnapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
       }));
       
-      // Filter out already voted positions
+      // Filter out already voted positions and sort by ballot sequence
       const votedPositions = data.votedPositions || [];
-      const remainingPositions = positionsData.filter(p => !votedPositions.includes(p.id));
+      const remainingPositions = positionsData
+        .filter(p => !votedPositions.includes(p.id))
+        .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
       
       setPositions(remainingPositions);
       setLoading(false);
@@ -131,7 +130,7 @@ export default function VotingSession() {
     initializeSession();
   }, [navigate]);
 
-  // Fetch candidates for current position
+  // Fetch candidates for current position and sort by ballot order
   useEffect(() => {
     const fetchCandidates = async () => {
       if (positions.length === 0) return;
@@ -145,10 +144,12 @@ export default function VotingSession() {
       );
       const candidatesSnapshot = await getDocs(candidatesQuery);
       
-      const candidatesData = candidatesSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
+      const candidatesData = candidatesSnapshot.docs
+        .map(d => ({
+          id: d.id,
+          ...d.data()
+        }))
+        .sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
       
       setCandidates(candidatesData);
     };
@@ -156,18 +157,16 @@ export default function VotingSession() {
     fetchCandidates();
   }, [currentIndex, positions]);
 
-  // Timer countdown - pauses when election is paused
+  // Timer countdown
   useEffect(() => {
     if (loading) return;
 
     const timer = setInterval(async () => {
-      // Skip countdown if paused
       if (isPaused) return;
 
       setRemainingTime(prev => {
         if (prev <= 1) {
           clearInterval(timer);
-          // Time expired - mark as completed
           const completeVoting = async () => {
             const user = auth.currentUser;
             if (user) {
@@ -189,14 +188,18 @@ export default function VotingSession() {
   }, [loading, navigate, isPaused]);
 
   const handleVote = useCallback(async (candidateId) => {
-    // Block voting only if paused (voting is allowed when ended until timer expires)
     if (voting || positions.length === 0 || isPaused) return;
     
     setVoting(true);
+    setVotedCandidateId(candidateId);
     
     try {
       const user = auth.currentUser;
-      if (!user) return;
+      if (!user) {
+        setVoting(false);
+        setVotedCandidateId(null);
+        return;
+      }
 
       const currentPosition = positions[currentIndex];
 
@@ -209,22 +212,21 @@ export default function VotingSession() {
           user.uid
         );
         showNotification(
-          `⛓️ Ballot Mined on Block #${blockchainReceipt.blockNumber}! Tx: ${blockchainReceipt.txHash.substring(0, 10)}...`,
+          `Ballot Mined on Block #${blockchainReceipt.blockNumber}! Tx: ${blockchainReceipt.txHash.substring(0, 10)}...`,
           "success"
         );
       } catch (bcError) {
         console.warn("Blockchain transaction note:", bcError.message);
-        // If contract strictly reverted due to double-voting or inactive election:
         if (bcError.message.includes("already") || bcError.message.includes("Guard")) {
           showNotification(bcError.message, "error");
           setVoting(false);
+          setVotedCandidateId(null);
           return;
         }
-        // Fallback for offline demo node
-        showNotification("Vote cast (EVM Local Node not detected, saved to local ledger).", "warning");
+        showNotification("Vote cast and recorded on fallback ledger.", "warning");
       }
       
-      // 2. Save vote to votes collection with on-chain cryptographic proof
+      // 2. Save vote to Firestore with cryptographic receipt
       await addDoc(collection(db, "votes"), {
         positionId: currentPosition.id,
         candidateId: candidateId,
@@ -249,8 +251,8 @@ export default function VotingSession() {
       if (currentIndex < positions.length - 1) {
         setCurrentIndex(prev => prev + 1);
         setVoting(false);
+        setVotedCandidateId(null);
       } else {
-        // All positions voted
         await updateDoc(userDocRef, {
           votingSessionCompleted: true
         });
@@ -260,9 +262,9 @@ export default function VotingSession() {
       console.error("Error casting vote:", error);
       showNotification("Failed to cast vote. Please try again.", "error");
       setVoting(false);
+      setVotedCandidateId(null);
     }
   }, [voting, positions, currentIndex, navigate, isPaused, showNotification]);
-
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -271,7 +273,11 @@ export default function VotingSession() {
   };
 
   if (loading) {
-    return <div style={{ padding: "20px", textAlign: "center" }}>Loading...</div>;
+    return (
+      <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--text-muted)" }}>
+        Loading ballot constituency...
+      </div>
+    );
   }
 
   if (positions.length === 0) {
@@ -281,136 +287,163 @@ export default function VotingSession() {
         flexDirection: "column", 
         alignItems: "center", 
         justifyContent: "center", 
-        minHeight: "100vh",
+        minHeight: "70vh",
         textAlign: "center",
         padding: "20px"
       }}>
         <h2>No Active Positions</h2>
-        <p>There are no active positions to vote for at this time.</p>
+        <p style={{ color: "var(--text-muted)" }}>There are no active voting positions configured for this session.</p>
       </div>
     );
   }
 
   const currentPosition = positions[currentIndex];
   const progress = ((currentIndex) / positions.length) * 100;
-
-  // Disable voting only when paused (voting is allowed when ended until timer expires)
   const canVote = !isPaused;
 
   return (
-    <div style={{ minHeight: "100vh", padding: "20px" }}>
-      {/* Pause Banner - Shows when election is paused */}
+    <div style={{ maxWidth: "1100px", margin: "0 auto", padding: "1rem 1rem 3rem" }}>
+      {/* Pause Banner */}
       {isPaused && !isEnded && (
         <div style={{
-          position: "fixed",
-          top: "90px",
-          left: 0,
-          right: 0,
-          backgroundColor: "#ffc107",
-          color: "#212529",
-          padding: "15px",
-          textAlign: "center",
-          fontSize: "18px",
-          fontWeight: "bold",
-          zIndex: 998
+          backgroundColor: "rgba(245, 158, 11, 0.15)",
+          border: "1px solid var(--accent-warning)",
+          color: "#FBBF24",
+          padding: "10px 14px",
+          borderRadius: "var(--radius-default)",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "0.875rem",
+          fontWeight: 700,
+          marginBottom: "1rem"
         }}>
-          ⏸️ VOTING HAS BEEN PAUSED - You cannot vote right now. Please wait for the admin to resume.
+          <Pause size={16} />
+          <span>VOTING TEMPORARILY PAUSED - Please standby. The Returning Officer will resume voting shortly.</span>
         </div>
       )}
 
-      {/* Election Ended Banner - Shows when election has ended */}
+      {/* Election Ended Banner */}
       {isEnded && (
         <div style={{
-          position: "fixed",
-          top: "50px",
-          left: 0,
-          right: 0,
-          backgroundColor: "#fd7e14",
-          color: "white",
-          padding: "15px",
-          textAlign: "center",
-          fontSize: "16px",
-          fontWeight: "bold",
-          zIndex: 998
+          backgroundColor: "rgba(220, 38, 38, 0.15)",
+          border: "1px solid var(--accent-error)",
+          color: "#F87171",
+          padding: "10px 14px",
+          borderRadius: "var(--radius-default)",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          fontSize: "0.875rem",
+          fontWeight: 700,
+          marginBottom: "1rem"
         }}>
-          ⚠️ Election has ENDED - You can complete your current votes until your timer expires. No new votes will be accepted.
+          <AlertTriangle size={16} />
+          <span>Election Concluded - You may complete your current position ballot before your timer expires.</span>
         </div>
       )}
 
-      {/* Main Election Timer - visible to everyone */}
-      <div style={{ 
-        position: "fixed", 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        backgroundColor: "#2196F3",
-        color: "white",
-        padding: "10px",
-        textAlign: "center",
-        fontSize: "18px",
-        fontWeight: "bold",
-        zIndex: 1000
-      }}>
-        <ElectionTimer compact />
-      </div>
+      {/* Control Ribbon (design.md: 4px radius, #141414, Anton title) */}
+      <div className="card card-team-blue" style={{ marginBottom: "1.5rem", padding: "1rem 1.25rem" }}>
+        <div style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: "10px",
+          marginBottom: "0.75rem"
+        }}>
+          <div>
+            <div className="badge badge-blue" style={{ marginBottom: "4px" }}>
+              <span>STEP {currentIndex + 1} OF {positions.length}</span>
+            </div>
+            <h2 style={{ margin: 0, fontSize: "1.75rem" }}>
+              {currentPosition?.title || "Loading position..."}
+            </h2>
+          </div>
 
-      {/* Individual Timer Display */}
-      <div style={{ 
-        position: "fixed", 
-        top: "50px", 
-        left: 0, 
-        right: 0, 
-        backgroundColor: remainingTime <= 60 ? "#f44336" : "#4CAF50",
-        color: "white",
-        padding: "8px",
-        textAlign: "center",
-        fontSize: "16px",
-        fontWeight: "bold",
-        zIndex: 999
-      }}>
-        Your Time: {formatTime(remainingTime)}
-      </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <ElectionTimer compact />
 
-      {/* Progress Bar */}
-      <div style={{ 
-        position: "fixed", 
-        top: "80px", 
-        left: 0, 
-        right: 0, 
-        height: "5px", 
-        backgroundColor: "#ddd",
-        zIndex: 998 
-      }}>
-        <div style={{ 
-          height: "100%", 
-          width: `${progress}%`, 
-          backgroundColor: "#4CAF50",
-          transition: "width 0.3s"
-        }} />
-      </div>
-
-      <div style={{ marginTop: "100px", maxWidth: "1100px", margin: "100px auto 20px" }}>
-        {/* Position Name at Top */}
-        <div style={{ textAlign: "center", marginBottom: "30px", paddingTop: "10px" }}>
-          <h2 style={{ margin: 0 }}>{currentPosition?.title}</h2>
+            {/* Individual session timer */}
+            <div style={{
+              background: remainingTime <= 60 ? "rgba(220, 38, 38, 0.15)" : "rgba(34, 197, 94, 0.15)",
+              border: `1px solid ${remainingTime <= 60 ? "#DC2626" : "#22C55E"}`,
+              color: remainingTime <= 60 ? "#F87171" : "#4ADE80",
+              padding: "4px 10px",
+              borderRadius: "var(--radius-xs)",
+              fontSize: "0.8125rem",
+              fontWeight: 700,
+              fontFamily: "var(--font-mono)",
+              display: "flex",
+              alignItems: "center",
+              gap: "6px"
+            }}>
+              <Clock size={13} />
+              <span>SESSION: {formatTime(remainingTime)}</span>
+            </div>
+          </div>
         </div>
+
+        {/* Progress Bar (design.md sharp track with dynamic glow) */}
+        <div style={{
+          height: "4px",
+          borderRadius: "var(--radius-xs)",
+          backgroundColor: "var(--border-color)",
+          overflow: "hidden"
+        }}>
+          <div style={{
+            height: "100%",
+            width: `${progress}%`,
+            backgroundColor: "var(--accent-primary)",
+            boxShadow: progress > 0 ? "0 0 10px rgba(220, 38, 38, 0.7)" : "none",
+            transition: "width 0.35s cubic-bezier(0.16, 1, 0.3, 1)"
+          }} />
+        </div>
+      </div>
+
+      {/* Main Ballot Area with Step Slide Animation */}
+      <div key={currentPosition?.id || currentIndex} className="step-slide-container">
+        <p style={{
+          color: "var(--text-secondary)",
+          fontSize: "0.9rem",
+          marginBottom: "1rem",
+          textAlign: "center"
+        }}>
+          Review certified nominee manifestos and click <strong>Vote</strong> to cast your verified cryptographic ballot.
+        </p>
 
         {/* Candidates Cards */}
         <div className="candidate-grid" style={{ opacity: canVote ? 1 : 0.7 }}>
-          {candidates.map((candidate) => (
+          {candidates.map((candidate, idx) => (
             <CandidateCard
               key={candidate.id}
+              index={idx}
               candidate={candidate}
               onVote={handleVote}
               canVote={canVote}
               voting={voting}
+              isVotedFor={voting && votedCandidateId === candidate.id}
+              isOtherVoting={voting && votedCandidateId !== null && votedCandidateId !== candidate.id}
             />
           ))}
         </div>
 
-        {/* Position Counter at Bottom */}
-        <div style={{ textAlign: "center", marginTop: "30px", color: "#666" }}>
-          Position {currentIndex + 1} / {positions.length}
+        {/* Footnote */}
+        <div style={{
+          textAlign: "center",
+          marginTop: "2rem",
+          color: "var(--text-muted)",
+          fontSize: "0.75rem",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em"
+        }}>
+          <ShieldCheck size={14} color="#22C55E" />
+          <span>Position {currentIndex + 1} of {positions.length} · Ballots sealed with Keccak-256</span>
         </div>
       </div>
     </div>

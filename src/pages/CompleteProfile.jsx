@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { UserCheck, ArrowRight } from "lucide-react";
 import useNotification from "../hooks/useNotification";
 
 const departments = [
@@ -60,7 +61,7 @@ export default function CompleteProfile() {
     e.preventDefault();
     
     if (!department || !year || !dob) {
-      showNotification("Please fill all fields", "warning");
+      showNotification("Please fill in all mandatory profile fields.", "warning");
       return;
     }
 
@@ -69,8 +70,6 @@ export default function CompleteProfile() {
       if (!user) return;
 
       const docRef = doc(db, "users", user.uid);
-      
-      // Convert date string to Date object for Firestore
       const dobTimestamp = new Date(dob);
       
       await setDoc(docRef, {
@@ -91,73 +90,90 @@ export default function CompleteProfile() {
   };
 
   if (loading) {
-    return <div style={{ padding: "20px", textAlign: "center" }}>Loading...</div>;
+    return (
+      <div style={{ padding: "60px 20px", textAlign: "center", color: "var(--text-muted)" }}>
+        Loading student voter record...
+      </div>
+    );
   }
 
   return (
-    <div style={{ 
-      maxWidth: "400px", 
-      margin: "50px auto", 
-      padding: "20px",
-      textAlign: "center"
-    }}>
-      <h2>Complete Your Profile</h2>
-      <p>Please provide your details to proceed with voting.</p>
+    <div className="login-container">
+      <div className="login-card card card-team-blue">
+        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div className="badge badge-blue" style={{ marginBottom: "8px" }}>
+            <UserCheck size={12} />
+            <span>VOTER REGISTRY VERIFICATION</span>
+          </div>
 
-      <form onSubmit={handleSubmit} style={{ marginTop: "20px" }}>
-        <div style={{ marginBottom: "15px" }}>
-          <label style={{ display: "block", marginBottom: "5px" }}>Department</label>
-          <select 
-            value={department}
-            onChange={(e) => setDepartment(e.target.value)}
-            style={{ width: "100%", padding: "10px" }}
+          <h2 style={{ margin: "0 0 0.35rem" }}>Complete Your Profile</h2>
+          <p style={{ margin: 0, color: "var(--text-secondary)", fontSize: "0.875rem", lineHeight: 1.5 }}>
+            Provide your academic department, year, and date of birth to certify voter eligibility.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="field-card">
+            <label className="field-label" htmlFor="dept-select">
+              Academic Department <span style={{ color: "var(--accent-error)" }} aria-hidden="true">*</span>
+            </label>
+            <select 
+              id="dept-select"
+              value={department}
+              required
+              aria-required="true"
+              onChange={(e) => setDepartment(e.target.value)}
+            >
+              <option value="">-- Select Department --</option>
+              {departments.map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field-card">
+            <label className="field-label" htmlFor="year-select">
+              Academic Year <span style={{ color: "var(--accent-error)" }} aria-hidden="true">*</span>
+            </label>
+            <select 
+              id="year-select"
+              value={year}
+              required
+              aria-required="true"
+              onChange={(e) => setYear(e.target.value)}
+            >
+              <option value="">-- Select Academic Year --</option>
+              {years.map((yr) => (
+                <option key={yr} value={yr}>{yr}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field-card">
+            <label className="field-label" htmlFor="dob-input">
+              Date of Birth <span style={{ color: "var(--accent-error)" }} aria-hidden="true">*</span>
+            </label>
+            <input 
+              id="dob-input"
+              type="date"
+              required
+              aria-required="true"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              className="mono"
+            />
+          </div>
+
+          <button 
+            type="submit"
+            className="btn btn-primary"
+            style={{ width: "100%", marginTop: "0.5rem" }}
           >
-            <option value="">Select Department</option>
-            {departments.map((dept) => (
-              <option key={dept} value={dept}>{dept}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginBottom: "15px" }}>
-          <label style={{ display: "block", marginBottom: "5px" }}>Year</label>
-          <select 
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            style={{ width: "100%", padding: "10px" }}
-          >
-            <option value="">Select Year</option>
-            {years.map((yr) => (
-              <option key={yr} value={yr}>{yr}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ marginBottom: "15px" }}>
-          <label style={{ display: "block", marginBottom: "5px" }}>Date of Birth</label>
-          <input 
-            type="date"
-            value={dob}
-            onChange={(e) => setDob(e.target.value)}
-            style={{ width: "100%", padding: "10px" }}
-          />
-        </div>
-
-        <button 
-          type="submit"
-          style={{ 
-            width: "100%", 
-            padding: "12px", 
-            backgroundColor: "#4CAF50", 
-            color: "white",
-            border: "none",
-            cursor: "pointer",
-            fontSize: "16px"
-          }}
-        >
-          Submit & Continue
-        </button>
-      </form>
+            <span>Confirm & Proceed to Ballot</span>
+            <ArrowRight size={16} />
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

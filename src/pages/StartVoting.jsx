@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
 import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import { CheckCircle2, Pause, XCircle, Clock, ArrowRight } from "lucide-react";
 import ElectionTimer from "../components/ElectionTimer";
 import useNotification from "../hooks/useNotification";
 
@@ -81,9 +82,8 @@ export default function StartVoting() {
   }, [navigate]);
 
   const handleStartVoting = async () => {
-    // Check if election is active before allowing to start
     if (electionStatus !== "active") {
-      showNotification("Voting is not currently active. Please wait for the admin to start the election.", "warning");
+      showNotification("Voting is not currently active. Please wait for the Returning Officer to commence the election.", "warning");
       return;
     }
 
@@ -113,13 +113,37 @@ export default function StartVoting() {
     
     switch (electionStatus) {
       case "active":
-        return { color: "#28a745", bg: "#d4edda", text: "✅ Election is ACTIVE - You can start voting!" };
+        return {
+          icon: <CheckCircle2 size={16} color="#22C55E" />,
+          color: "#4ADE80",
+          bg: "rgba(34, 197, 94, 0.15)",
+          border: "#22C55E",
+          text: "ELECTION ACTIVE - Cryptographic ballot booth is open"
+        };
       case "paused":
-        return { color: "#ffc107", bg: "#fff3cd", text: "⏸️ Election is PAUSED - Voting is temporarily disabled" };
+        return {
+          icon: <Pause size={16} color="#F59E0B" />,
+          color: "#FBBF24",
+          bg: "rgba(245, 158, 11, 0.15)",
+          border: "#F59E0B",
+          text: "ELECTION PAUSED - Voting temporarily suspended by Returning Officer"
+        };
       case "ended":
-        return { color: "#dc3545", bg: "#f8d7da", text: "❌ Election has ENDED - Voting is closed" };
+        return {
+          icon: <XCircle size={16} color="#DC2626" />,
+          color: "#F87171",
+          bg: "rgba(220, 38, 38, 0.15)",
+          border: "#DC2626",
+          text: "ELECTION CONCLUDED - Polls are officially sealed"
+        };
       default:
-        return { color: "#6c757d", bg: "#f8f9fa", text: "⚪ Election has NOT STARTED - Please wait" };
+        return {
+          icon: <Clock size={16} color="#A3A3A3" />,
+          color: "var(--text-muted)",
+          bg: "var(--bg-elevated)",
+          border: "var(--border-color)",
+          text: "ELECTION SCHEDULED - Standby for official session start"
+        };
     }
   };
 
@@ -127,55 +151,68 @@ export default function StartVoting() {
   const canVote = electionStatus === "active" && !loading;
 
   return (
-    <div style={{ 
-      display: "flex", 
-      flexDirection: "column", 
-      alignItems: "center", 
-      justifyContent: "center", 
-      minHeight: "100vh",
-      textAlign: "center",
-      padding: "20px"
+    <div style={{
+      maxWidth: "600px",
+      margin: "2rem auto",
+      padding: "0 1rem"
     }}>
-      {/* Main Election Timer */}
-      <div style={{ marginBottom: "20px" }}>
-        <ElectionTimer />
-      </div>
-      
-      <h2>Ready to Vote?</h2>
-      <p style={{ fontSize: "18px", marginBottom: "30px" }}>
-        Click Start to Begin Voting.<br />
-        You will have 10 minutes to complete your ballot.
-      </p>
-
-      {statusInfo && (
-        <div style={{
-          color: statusInfo.color,
-          backgroundColor: statusInfo.bg,
-          padding: "12px 20px",
-          borderRadius: "5px",
-          marginBottom: "20px",
-          border: `1px solid ${statusInfo.color}`,
-          fontWeight: "500"
-        }}>
-          {statusInfo.text}
+      <div className="card card-team-red" style={{ textAlign: "center", padding: "2rem 1.5rem" }}>
+        {/* Main Countdown Timer */}
+        <div style={{ marginBottom: "1.5rem" }}>
+          <ElectionTimer />
         </div>
-      )}
+        
+        <h2 style={{ margin: "0 0 0.5rem" }}>Ready to Cast Your Ballot?</h2>
+        
+        <p style={{
+          color: "var(--text-secondary)",
+          fontSize: "0.9375rem",
+          lineHeight: 1.6,
+          maxWidth: "460px",
+          margin: "0 auto 1.5rem"
+        }}>
+          Initiating the session starts a timed cryptographic ballot window. You will vote sequentially on each certified constituency.
+        </p>
 
-      <button 
-        onClick={handleStartVoting}
-        disabled={!canVote}
-        style={{ 
-          padding: "15px 40px", 
-          fontSize: "18px",
-          backgroundColor: canVote ? "#4CAF50" : "#cccccc", 
-          color: canVote ? "white" : "#666666",
-          border: "none",
-          cursor: canVote ? "pointer" : "not-allowed",
-          opacity: loading ? 0.7 : 1
-        }}
-      >
-        {loading ? "Starting..." : "Start Voting"}
-      </button>
+        {statusInfo && (
+          <div style={{
+            color: statusInfo.color,
+            backgroundColor: statusInfo.bg,
+            padding: "10px 14px",
+            borderRadius: "var(--radius-default)",
+            marginBottom: "1.75rem",
+            border: `1px solid ${statusInfo.border}`,
+            fontWeight: 600,
+            fontSize: "0.8125rem",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase"
+          }}>
+            {statusInfo.icon}
+            <span>{statusInfo.text}</span>
+          </div>
+        )}
+
+        <button 
+          onClick={handleStartVoting}
+          disabled={!canVote}
+          className="btn btn-primary"
+          style={{
+            minHeight: "48px",
+            padding: "0 2rem",
+            fontSize: "0.9375rem",
+            width: "100%",
+            maxWidth: "340px",
+            margin: "0 auto"
+          }}
+        >
+          <span>{loading ? "Initializing Ballot..." : "Initiate Voting Session"}</span>
+          <ArrowRight size={16} />
+        </button>
+      </div>
     </div>
   );
 }

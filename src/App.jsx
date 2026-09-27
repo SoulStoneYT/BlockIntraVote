@@ -1,5 +1,5 @@
 import { Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
+import Login from "./pages/login";
 import Admin from "./pages/Admin";
 import Vote from "./pages/Vote";
 import Positions from "./pages/Positions";
@@ -11,7 +11,7 @@ import VotingSession from "./pages/VotingSession";
 import Results from "./pages/Results";
 import BlockchainExplorer from "./pages/BlockchainExplorer";
 import BlockchainStatusBadge from "./components/BlockchainStatusBadge";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider } from "./context/ThemeContextProvider";
 
 function App() {
   return (

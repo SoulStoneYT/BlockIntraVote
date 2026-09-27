@@ -1,0 +1,92 @@
+/* UX4G Design System Theme & Utility Styles */
+:root {
+  /* Brand & Institutional Colors */
+  --ux4g-primary: #003366;
+  --ux4g-primary-hover: #002244;
+  --ux4g-primary-light: #e8f1fa;
+  --ux4g-accent-saffron: #e06d20;
+  --ux4g-accent-green: #107e3e;
+
+  /* Surfaces & Backgrounds */
+  --ux4g-bg: #f8fafc;
+  --ux4g-surface: #ffffff;
+  --ux4g-surface-subtle: #f1f5f9;
+  --ux4g-border: #cbd5e1;
+
+  /* Typography Colors */
+  --ux4g-text-primary: #0f172a;
+  --ux4g-text-secondary: #475569;
+  --ux4g-text-muted: #64748b;
+
+  /* Semantic Alerts */
+  --ux4g-success: #107e3e;
+  --ux4g-warning: #b45309;
+  --ux4g-danger: #c5221f;
+  --ux4g-info: #0284c7;
+
+  /* Focus & Elevation */
+  --ux4g-focus-ring: 0 0 0 3px rgba(0, 51, 102, 0.35);
+  --ux4g-radius: 6px;
+  --ux4g-font-base: 16px;
+}
+
+/* High Contrast / Dark Theme Overrides */
+[data-theme="dark"],
+.dark {
+  --ux4g-primary: #38bdf8;
+  --ux4g-primary-hover: #7dd3fc;
+  --ux4g-primary-light: #0c2a47;
+  --ux4g-bg: #0b0f17;
+  --ux4g-surface: #151e2e;
+  --ux4g-surface-subtle: #1e293b;
+  --ux4g-border: #334155;
+  --ux4g-text-primary: #f8fafc;
+  --ux4g-text-secondary: #94a3b8;
+  --ux4g-text-muted: #64748b;
+  --ux4g-focus-ring: 0 0 0 3px rgba(56, 189, 248, 0.45);
+}
+
+/* Text Sizing Multipliers for Accessibility Bar */
+html[data-font-size="small"] {
+  font-size: 14px;
+}
+
+html[data-font-size="default"] {
+  font-size: 16px;
+}
+
+html[data-font-size="large"] {
+  font-size: 18px;
+}
+
+/* Universal Accessible Focus Ring */
+*:focus-visible {
+  outline: 2px solid var(--ux4g-primary) !important;
+  outline-offset: 2px !important;
+}
+
+/* Skip Link */
+.ux4g-skip-link {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  background: #f59e0b;
+  color: #000;
+  padding: 8px 16px;
+  font-weight: 700;
+  z-index: 9999;
+  border-radius: 4px;
+  transition: top 0.2s ease-in-out;
+}
+
+.ux4g-skip-link:focus {
+  top: 16px;
+}
+
+/* Accessible Interactive Minimum Target */
+.ux4g-btn,
+.ux4g-input {
+  min-height: 44px;
+  border-radius: var(--ux4g-radius);
+  font-family: inherit;
+}

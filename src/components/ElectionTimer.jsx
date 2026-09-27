@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { Clock, AlertTriangle } from "lucide-react";
 import { db } from "../firebase";
 import { doc, onSnapshot } from "firebase/firestore";
 
@@ -17,8 +18,7 @@ export default function ElectionTimer({ compact = false, showLabel = true }) {
           setElectionStatus(data.electionStatus);
 
           if (data.electionEndTime) {
-            // Handle both string and Date formats
-            const endTime = typeof data.electionEndTime === 'string' 
+            const endTime = typeof data.electionEndTime === "string" 
               ? new Date(data.electionEndTime) 
               : data.electionEndTime.toDate();
             setElectionEndTime(endTime);
@@ -46,7 +46,6 @@ export default function ElectionTimer({ compact = false, showLabel = true }) {
     }
 
     const interval = setInterval(() => setTick(Date.now()), 1000);
-    
     return () => clearInterval(interval);
   }, [electionEndTime, electionStatus]);
 
@@ -66,7 +65,7 @@ export default function ElectionTimer({ compact = false, showLabel = true }) {
     const minutes = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
     
-    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
   // Don't show if election not active
@@ -74,50 +73,92 @@ export default function ElectionTimer({ compact = false, showLabel = true }) {
     return null;
   }
 
-  // Determine color based on remaining time
-  let bgColor = "#28a745"; // green - more than 30 min
+  // Determine styling based on remaining time (design.md: red for critical, amber for warning, green for normal)
+  let statusColor = "#22C55E";
+  let borderColor = "#22C55E";
+  let bgTint = "rgba(34, 197, 94, 0.12)";
+
   if (remainingSeconds <= 600) { // 10 min
-    bgColor = "#dc3545"; // red
+    statusColor = "#DC2626";
+    borderColor = "#DC2626";
+    bgTint = "rgba(220, 38, 38, 0.15)";
   } else if (remainingSeconds <= 1800) { // 30 min
-    bgColor = "#ffc107"; // yellow
+    statusColor = "#F59E0B";
+    borderColor = "#F59E0B";
+    bgTint = "rgba(245, 158, 11, 0.15)";
   }
 
   if (compact) {
     return (
       <div style={{
-        backgroundColor: bgColor,
-        color: remainingSeconds <= 1800 ? "#212529" : "white",
-        padding: "8px 16px",
-        borderRadius: "5px",
-        fontWeight: "bold",
-        fontSize: "14px",
-        display: "inline-block"
+        backgroundColor: bgTint,
+        border: `1px solid ${borderColor}`,
+        color: statusColor,
+        padding: "4px 8px",
+        borderRadius: "var(--radius-xs)",
+        fontWeight: 700,
+        fontSize: "0.8125rem",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        fontFamily: "var(--font-mono)",
+        letterSpacing: "0.04em"
       }}>
-        ⏱️ {formatTime(remainingSeconds)}
+        <Clock size={12} />
+        <span>{formatTime(remainingSeconds)}</span>
       </div>
     );
   }
 
   return (
     <div style={{
-      backgroundColor: bgColor,
-      color: remainingSeconds <= 1800 ? "#212529" : "white",
-      padding: "15px 20px",
-      borderRadius: "8px",
-      textAlign: "center",
-      fontWeight: "bold"
+      backgroundColor: "var(--bg-surface)",
+      border: "1px solid var(--border-color)",
+      borderTop: `3px solid ${borderColor}`,
+      borderRadius: "var(--radius-default)",
+      padding: "16px 20px",
+      textAlign: "center"
     }}>
       {showLabel && (
-        <div style={{ fontSize: "14px", marginBottom: "5px", opacity: 0.9 }}>
-          MAIN ELECTION TIMER
+        <div style={{
+          fontSize: "0.75rem",
+          fontWeight: 700,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          color: "var(--text-muted)",
+          marginBottom: "6px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "6px"
+        }}>
+          <Clock size={13} />
+          <span>BALLOT TIMEFRAME COUNTDOWN</span>
         </div>
       )}
-      <div style={{ fontSize: "28px" }}>
+      <div style={{
+        fontSize: "2.25rem",
+        fontWeight: 700,
+        fontFamily: "var(--font-mono)",
+        color: statusColor,
+        letterSpacing: "0.05em"
+      }}>
         {formatTime(remainingSeconds)}
       </div>
       {remainingSeconds <= 300 && remainingSeconds > 0 && (
-        <div style={{ fontSize: "12px", marginTop: "5px", opacity: 0.9 }}>
-          ⚠️ Less than 5 minutes remaining!
+        <div style={{
+          fontSize: "0.75rem",
+          marginTop: "6px",
+          color: "var(--accent-error)",
+          fontWeight: 600,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "5px",
+          textTransform: "uppercase"
+        }}>
+          <AlertTriangle size={13} />
+          <span>Critical: Under 5 minutes remaining before polls seal!</span>
         </div>
       )}
     </div>

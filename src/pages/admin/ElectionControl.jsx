@@ -17,14 +17,32 @@ import { sendResultsAnnouncementEmails } from "../../services/emailService";
 import ElectionTimer from "../../components/ElectionTimer";
 import useNotification from "../../hooks/useNotification";
 import useConfirm from "../../hooks/useConfirm";
+import {
+  Clock,
+  Activity,
+  Pause,
+  Flag,
+  Play,
+  Square,
+  Megaphone,
+  RefreshCw,
+  FlaskConical,
+  Flame,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  CheckCircle2
+} from "lucide-react";
 
-export default function ElectionControl() {
+export default function ElectionControl({ stats = {} }) {
   const [electionStatus, setElectionStatus] = useState("not_started");
   const [, setElectionEndTime] = useState(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState("");
   const [resultsPublished, setResultsPublished] = useState(false);
+  const [devToolsOpen, setDevToolsOpen] = useState(false);
+
   const { showNotification } = useNotification();
   const { showConfirm } = useConfirm();
 
@@ -32,31 +50,33 @@ export default function ElectionControl() {
   useEffect(() => {
     const initializeAndSubscribe = async () => {
       try {
-        // Initialize the election settings document if it doesn't exist
         await initElectionSettings();
 
-        // Subscribe to real-time updates
         const electionDocRef = doc(db, "settings", "election");
         const unsubscribe = onSnapshot(electionDocRef, async (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data();
             setElectionStatus(data.electionStatus);
             setResultsPublished(data.resultsPublished || false);
-            
+
             if (data.electionEndTime) {
-              const endTime = typeof data.electionEndTime === 'string' 
-                ? new Date(data.electionEndTime) 
-                : data.electionEndTime.toDate ? data.electionEndTime.toDate() : new Date(data.electionEndTime);
+              const endTime = typeof data.electionEndTime === "string"
+                ? new Date(data.electionEndTime)
+                : data.electionEndTime.toDate
+                ? data.electionEndTime.toDate()
+                : new Date(data.electionEndTime);
               setElectionEndTime(endTime);
             }
-            
+
             // Auto-end election if time has expired
             if (data.electionStatus === "active" && data.electionEndTime) {
               const now = new Date();
-              const endTimeDate = typeof data.electionEndTime === 'string' 
-                ? new Date(data.electionEndTime) 
-                : data.electionEndTime.toDate ? data.electionEndTime.toDate() : new Date(data.electionEndTime);
-              
+              const endTimeDate = typeof data.electionEndTime === "string"
+                ? new Date(data.electionEndTime)
+                : data.electionEndTime.toDate
+                ? data.electionEndTime.toDate()
+                : new Date(data.electionEndTime);
+
               if (now >= endTimeDate) {
                 await endElection();
               }
@@ -77,21 +97,36 @@ export default function ElectionControl() {
   }, []);
 
   const handleStart = async () => {
+    const confirmed = await showConfirm(
+      "Are you sure you want to start the election? Eligible voters will immediately be able to cast verified ballots.",
+      { title: "Start Election", confirmText: "Start Election" }
+    );
+    if (!confirmed) return;
+
     setProcessing(true);
     setError("");
     try {
       await startElection();
+      showNotification("Election is now LIVE! Voting booth is open.", "success");
     } catch (err) {
       setError(err.message);
+      showNotification(err.message, "error");
     }
     setProcessing(false);
   };
 
   const handlePause = async () => {
+    const confirmed = await showConfirm(
+      "Pause the active election session? Balloting will be temporarily suspended.",
+      { title: "Pause Election", confirmText: "Pause Voting" }
+    );
+    if (!confirmed) return;
+
     setProcessing(true);
     setError("");
     try {
       await pauseElection();
+      showNotification("Voting temporarily paused.", "info");
     } catch (err) {
       setError(err.message);
     }
@@ -103,6 +138,7 @@ export default function ElectionControl() {
     setError("");
     try {
       await resumeElection();
+      showNotification("Voting session resumed successfully.", "success");
     } catch (err) {
       setError(err.message);
     }
@@ -110,18 +146,17 @@ export default function ElectionControl() {
   };
 
   const handleEnd = async () => {
-    const confirmed = await showConfirm("Are you sure you want to end the election? This action cannot be undone.", {
-      title: "End Election",
-      confirmText: "End Election"
-    });
+    const confirmed = await showConfirm(
+      "Are you sure you want to END the election? Once ended, no further ballots can be cast on the blockchain ledger.",
+      { title: "Conclude Election", confirmText: "End Election" }
+    );
+    if (!confirmed) return;
 
-    if (!confirmed) {
-      return;
-    }
     setProcessing(true);
     setError("");
     try {
       await endElection();
+      showNotification("Election concluded. Ballots locked on blockchain.", "info");
     } catch (err) {
       setError(err.message);
     }
@@ -129,18 +164,17 @@ export default function ElectionControl() {
   };
 
   const handleReset = async () => {
-    const confirmed = await showConfirm("Are you sure you want to reset the election? This will clear all timing data.", {
-      title: "Reset Election",
-      confirmText: "Reset"
-    });
+    const confirmed = await showConfirm(
+      "Reset election schedule and timing parameters? This will clear active election timestamps.",
+      { title: "Reset Election Schedule", confirmText: "Reset Schedule" }
+    );
+    if (!confirmed) return;
 
-    if (!confirmed) {
-      return;
-    }
     setProcessing(true);
     setError("");
     try {
       await resetElection();
+      showNotification("Election timing reset to NOT STARTED.", "info");
     } catch (err) {
       setError(err.message);
     }
@@ -148,14 +182,12 @@ export default function ElectionControl() {
   };
 
   const handlePublishResults = async () => {
-    const confirmed = await showConfirm("Are you sure you want to publish the results? This will make them visible to all voters.", {
-      title: "Publish Results",
-      confirmText: "Publish"
-    });
+    const confirmed = await showConfirm(
+      "Publish verified election results to all students and trigger announcement notifications?",
+      { title: "Publish Results", confirmText: "Publish to All" }
+    );
+    if (!confirmed) return;
 
-    if (!confirmed) {
-      return;
-    }
     setProcessing(true);
     setError("");
     try {
@@ -167,272 +199,364 @@ export default function ElectionControl() {
 
       if (failed > 0) {
         showNotification(
-          `Results published successfully! Email summary: ${sent}/${total} sent, ${failed} failed.${
-            failedReasons?.[0] ? `\nFirst error: ${failedReasons[0]}` : ""
+          `Results published! Email summary: ${sent}/${total} sent, ${failed} failed.${
+            failedReasons?.[0] ? ` (${failedReasons[0]})` : ""
           }`,
           "warning",
           7000
         );
       } else {
-        showNotification(`Results published and email sent to ${sent} voters.`, "success");
+        showNotification(`Results published and broadcast to ${sent} registered voters.`, "success");
       }
     } catch (err) {
       setError(err.message);
+      showNotification(err.message || "Failed to publish results", "error");
     }
     setProcessing(false);
   };
 
+  // Developer & Testing actions
   const handleResetVotesOnly = async () => {
-    const confirmed = await showConfirm("Reset all voting results? This will delete all votes for testing.", {
-      title: "Reset Votes",
-      confirmText: "Reset Votes"
-    });
-
-    if (!confirmed) {
-      return;
-    }
+    const confirmed = await showConfirm(
+      "Reset all voting records? This will delete all vote documents from Firestore for testing.",
+      { title: "Reset Votes", confirmText: "Delete Votes" }
+    );
+    if (!confirmed) return;
 
     setProcessing(true);
     setError("");
-
     try {
       const { deletedVotes } = await resetAllVotes();
       showNotification(`Reset complete. Deleted ${deletedVotes} vote records.`, "info");
     } catch (err) {
       setError(err.message || "Failed to reset voting results");
     }
-
     setProcessing(false);
   };
 
   const handleResetUserVotingOnly = async () => {
-    const confirmed = await showConfirm("Reset all user voting status? This clears voted positions for every user.", {
-      title: "Reset User Voting Status",
-      confirmText: "Reset Users"
-    });
-
-    if (!confirmed) {
-      return;
-    }
+    const confirmed = await showConfirm(
+      "Reset all user voting status? This clears voted positions for every student account.",
+      { title: "Reset User Voting Status", confirmText: "Reset Status" }
+    );
+    if (!confirmed) return;
 
     setProcessing(true);
     setError("");
-
     try {
       const { resetUsers } = await resetAllUserVotingStatus();
       showNotification(`Reset complete. Cleared voting status for ${resetUsers} users.`, "info");
     } catch (err) {
       setError(err.message || "Failed to reset user voting status");
     }
-
     setProcessing(false);
   };
 
   const handleFullTestingReset = async () => {
-    const confirmed = await showConfirm("Run FULL TEST RESET? This will clear votes, reset all user voting status, and reset election state.", {
-      title: "Full Testing Reset",
-      confirmText: "Run Reset"
-    });
-
-    if (!confirmed) {
-      return;
-    }
+    const confirmed = await showConfirm(
+      "CRITICAL TEST RESET: Delete all votes, reset all student voting history, and set election to NOT STARTED?",
+      { title: "Full Testing Reset", confirmText: "Execute Full Reset" }
+    );
+    if (!confirmed) return;
 
     setProcessing(true);
     setError("");
-
     try {
       const { deletedVotes, resetUsers } = await fullTestingReset();
       setResultsPublished(false);
       showNotification(
-        `Full reset complete. Deleted ${deletedVotes} votes and reset ${resetUsers} users. Election status set to NOT STARTED.`,
+        `Full reset complete: ${deletedVotes} votes deleted, ${resetUsers} users reset. Status: NOT STARTED.`,
         "info",
         6000
       );
     } catch (err) {
       setError(err.message || "Failed to run full testing reset");
     }
-
     setProcessing(false);
   };
 
-  const getStatusBadge = () => {
-    const statusConfig = {
-      not_started: { color: "#6c757d", bg: "#f8f9fa", text: "NOT STARTED" },
-      active: { color: "#28a745", bg: "#d4edda", text: "ACTIVE" },
-      paused: { color: "#ffc107", bg: "#fff3cd", text: "PAUSED" },
-      ended: { color: "#dc3545", bg: "#f8d7da", text: "ENDED" }
-    };
-
-    const config = statusConfig[electionStatus] || statusConfig.not_started;
-
-    return (
-      <span style={{
-        color: config.color,
-        backgroundColor: config.bg,
-        padding: "8px 16px",
-        borderRadius: "4px",
-        fontWeight: "bold",
-        fontSize: "14px",
-        border: `1px solid ${config.color}`
-      }}>
-        {config.text}
-      </span>
-    );
+  const statusConfig = {
+    not_started: {
+      label: "NOT STARTED",
+      color: "#94a3b8",
+      bg: "rgba(148, 163, 184, 0.12)",
+      border: "#475569",
+      desc: "Election setup mode. Voters cannot cast ballots until the Chief Returning Officer starts the session.",
+      Icon: Clock
+    },
+    active: {
+      label: "VOTING ACTIVE",
+      color: "#4ade80",
+      bg: "rgba(34, 197, 94, 0.15)",
+      border: "#22c55e",
+      desc: "Voters are currently casting cryptographically verifiable ballots on the Ethereum ledger.",
+      Icon: Activity
+    },
+    paused: {
+      label: "TEMPORARILY PAUSED",
+      color: "#fde68a",
+      bg: "rgba(245, 158, 11, 0.15)",
+      border: "#f59e0b",
+      desc: "Voting is temporarily suspended by administrative order. Voters are placed on standby.",
+      Icon: Pause
+    },
+    ended: {
+      label: "ELECTION CONCLUDED",
+      color: "#fca5a5",
+      bg: "rgba(239, 68, 68, 0.15)",
+      border: "#ef4444",
+      desc: "Ballot intake closed. On-chain results are frozen and ready for certification or publishing.",
+      Icon: Flag
+    }
   };
+
+  const currentCfg = statusConfig[electionStatus] || statusConfig.not_started;
+  const StatusIcon = currentCfg.Icon;
 
   if (loading) {
     return (
-      <div style={{ padding: "20px", textAlign: "center" }}>
-        <p>Loading election status...</p>
+      <div className="hero-status-card" style={{ textAlign: "center", padding: "2rem" }}>
+        <p style={{ color: "var(--text-muted)", margin: 0 }}>Initializing Election State Engine...</p>
       </div>
     );
   }
 
   return (
-    <section className="admin-section">
-      <div className="admin-section-header">
-        <div>
-          <h3 className="admin-section-title">Election Control Panel</h3>
-          <p style={{ margin: "0.6rem 0 0", color: "#546c8d" }}>Manage the election status and voting accessibility</p>
-        </div>
-      </div>
+    <>
+      {/* HERO ELECTION STATUS CARD (Un-nested, Intentional, Mobile-First) */}
+      <section id="election-status-section" className="hero-status-card">
+        <div className="hero-status-header">
+          <div className="hero-status-pill" style={{
+            background: currentCfg.bg,
+            border: `1px solid ${currentCfg.border}`,
+            color: currentCfg.color,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px"
+          }}>
+            <StatusIcon size={14} />
+            <span>{currentCfg.label}</span>
+          </div>
 
-      <div className="admin-card">
-        <h3 style={{ marginTop: 0, marginBottom: "15px" }}>Current Status</h3>
-        <div style={{ display: "flex", alignItems: "center", gap: "15px", marginBottom: "15px" }}>
-          <span style={{ fontSize: "18px", fontWeight: "500" }}>Election:</span>
-          {getStatusBadge()}
+          {/* Integrated Compact Timer */}
+          <div className="hero-timer-container">
+            <ElectionTimer compact />
+          </div>
         </div>
-        
-        {/* Main Election Timer */}
-        <div style={{ marginTop: "15px" }}>
-          <ElectionTimer />
+
+        <div className="hero-status-body">
+          <h3 className="hero-status-title">
+            {electionStatus === "not_started" && "Election Scheduled · Ready to Launch"}
+            {electionStatus === "active" && "Decentralized Ballot Booth is Live"}
+            {electionStatus === "paused" && "Balloting Temporarily Paused"}
+            {electionStatus === "ended" && "Election Concluded · Ledger Sealed"}
+          </h3>
+          <p className="hero-status-desc">{currentCfg.desc}</p>
+
+          {/* Real-time stats ticker during active or ended election */}
+          {electionStatus !== "not_started" && stats.votesCast !== undefined && (
+            <div className="hero-live-ticker">
+              <div className="ticker-item">
+                <span className="ticker-label">Votes Mined:</span>
+                <strong className="ticker-val" style={{ fontFamily: "var(--font-mono)" }}>{stats.votesCast}</strong>
+              </div>
+              <div className="ticker-separator">·</div>
+              <div className="ticker-item">
+                <span className="ticker-label">Turnout:</span>
+                <strong className="ticker-val" style={{ fontFamily: "var(--font-mono)" }}>{stats.turnout}%</strong>
+              </div>
+              {stats.activePositions !== undefined && (
+                <>
+                  <div className="ticker-separator">·</div>
+                  <div className="ticker-item">
+                    <span className="ticker-label">Constituencies:</span>
+                    <strong className="ticker-val">{stats.activePositions} Active</strong>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="admin-alert admin-alert--error">
-          {error}
-        </div>
-      )}
+        {error && (
+          <div className="hero-error-banner" style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <AlertTriangle size={15} />
+            <span>{error}</span>
+          </div>
+        )}
 
-      <div className="admin-card admin-panel-controls">
-        <h3 style={{ marginTop: 0, marginBottom: "20px" }}>Control Actions</h3>
-
-        <div className="control-grid">
-          {/* Start Button */}
+        {/* Primary Contextual Actions Bar (Full width on mobile, 48px touch targets) */}
+        <div className="hero-actions-bar">
           {electionStatus === "not_started" && (
             <button
+              type="button"
               onClick={handleStart}
               disabled={processing}
-              className="admin-btn primary"
+              className="action-btn action-btn--primary"
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
             >
-              {processing ? "Processing..." : "Start Election"}
+              <Play size={16} />
+              <span>{processing ? "Processing..." : "Start Election & Open Ballot"}</span>
             </button>
           )}
 
-          {/* Pause/Resume Buttons */}
           {electionStatus === "active" && (
-            <button
-              onClick={handlePause}
-              disabled={processing}
-              className="admin-btn secondary"
-            >
-              {processing ? "Processing..." : "Pause Election"}
-            </button>
+            <div className="action-btn-group">
+              <button
+                type="button"
+                onClick={handlePause}
+                disabled={processing}
+                className="action-btn action-btn--secondary"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              >
+                <Pause size={16} />
+                <span>{processing ? "Processing..." : "Pause Voting"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleEnd}
+                disabled={processing}
+                className="action-btn action-btn--danger"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              >
+                <Square size={16} />
+                <span>{processing ? "Processing..." : "End Election"}</span>
+              </button>
+            </div>
           )}
 
           {electionStatus === "paused" && (
-            <button
-              onClick={handleResume}
-              disabled={processing}
-              className="admin-btn primary"
-            >
-              {processing ? "Processing..." : "Resume Election"}
-            </button>
-          )}
-
-          {/* End Button */}
-          {(electionStatus === "active" || electionStatus === "paused") && (
-            <button
-              onClick={handleEnd}
-              disabled={processing}
-              className="admin-btn danger"
-            >
-              {processing ? "Processing..." : "End Election"}
-            </button>
-          )}
-
-          {/* Reset Button - Only for ended elections */}
-          {electionStatus === "ended" && (
-            <>
+            <div className="action-btn-group">
               <button
+                type="button"
+                onClick={handleResume}
+                disabled={processing}
+                className="action-btn action-btn--primary"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              >
+                <Play size={16} />
+                <span>{processing ? "Processing..." : "Resume Voting"}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleEnd}
+                disabled={processing}
+                className="action-btn action-btn--danger"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+              >
+                <Square size={16} />
+                <span>{processing ? "Processing..." : "End Election"}</span>
+              </button>
+            </div>
+          )}
+
+          {electionStatus === "ended" && (
+            <div className="action-btn-group">
+              <button
+                type="button"
                 onClick={handlePublishResults}
                 disabled={processing || resultsPublished}
-                className="admin-btn primary"
+                className="action-btn action-btn--primary"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
               >
-                {resultsPublished ? "✓ Results Published" : "Publish Results"}
+                {resultsPublished ? (
+                  <>
+                    <CheckCircle2 size={16} /> Results Published & Broadcast
+                  </>
+                ) : (
+                  <>
+                    <Megaphone size={16} /> Publish & Broadcast Results
+                  </>
+                )}
               </button>
               <button
+                type="button"
                 onClick={handleReset}
                 disabled={processing}
-                className="admin-btn tertiary"
+                className="action-btn action-btn--tertiary"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
               >
-                {processing ? "Processing..." : "Reset Election"}
+                <RefreshCw size={15} />
+                <span>{processing ? "Processing..." : "Reset Schedule"}</span>
               </button>
-            </>
+            </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* Testing Tools */}
-      <div className="admin-card admin-card--warning">
-        <h3 style={{ marginTop: 0, marginBottom: "10px", color: "#ffd36a" }}>
-          🧪 Temporary Testing Tools
-        </h3>
-        <p style={{ marginTop: 0, marginBottom: "16px", fontSize: "14px", color: "#f8d89b" }}>
-          Use these admin-only actions to quickly reset data while testing.
-        </p>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-          <button
-            onClick={handleResetVotesOnly}
-            disabled={processing}
-            className="admin-btn secondary"
-          >
-            {processing ? "Processing..." : "Reset Voting Results (Delete Votes)"}
-          </button>
-
-          <button
-            onClick={handleResetUserVotingOnly}
-            disabled={processing}
-            className="admin-btn primary"
-          >
-            {processing ? "Processing..." : "Reset User Voting Status"}
-          </button>
-
-          <button
-            onClick={handleFullTestingReset}
-            disabled={processing}
-            className="admin-btn danger"
-          >
-            {processing ? "Processing..." : "Full Testing Reset (Votes + Users + Election)"}
-          </button>
+      {/* DEVELOPER & TESTING TOOLS (Collapsed at very bottom, visually distinct) */}
+      <section id="dev-tools-section" className="dev-tools-wrapper">
+        <div
+          className="dev-tools-toggle"
+          onClick={() => setDevToolsOpen(!devToolsOpen)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setDevToolsOpen(!devToolsOpen)}
+        >
+          <div className="dev-tools-label">
+            <span className="dev-icon" style={{ display: "inline-flex", alignItems: "center" }}>
+              <FlaskConical size={16} />
+            </span>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <strong style={{ color: "var(--text-primary)" }}>Developer & Testing Tools</strong>
+              <span className="dev-subtitle">(Reset votes, test profiles, debug Hardhat ledger)</span>
+            </div>
+          </div>
+          <span className="dev-chevron" style={{ display: "inline-flex", alignItems: "center", gap: "4px" }}>
+            {devToolsOpen ? (
+              <>
+                <ChevronUp size={14} /> Collapse
+              </>
+            ) : (
+              <>
+                <ChevronDown size={14} /> Expand
+              </>
+            )}
+          </span>
         </div>
-      </div>
 
-      {/* Status Info */}
-      <div className="admin-card admin-card--info">
-        <strong>Status Guide:</strong>
-        <ul style={{ marginTop: "10px", paddingLeft: "20px" }}>
-          <li><strong>NOT STARTED</strong> - Voters cannot start voting</li>
-          <li><strong>ACTIVE</strong> - Voters can start and complete voting</li>
-          <li><strong>PAUSED</strong> - Voting is temporarily disabled</li>
-          <li><strong>ENDED</strong> - Voting is closed permanently</li>
-        </ul>
-      </div>
-    </section>
+        {devToolsOpen && (
+          <div className="dev-tools-content">
+            <p className="dev-warning-text" style={{ display: "flex", alignItems: "flex-start", gap: "6px" }}>
+              <AlertTriangle size={16} style={{ flexShrink: 0, marginTop: "2px" }} />
+              <span>
+                <strong>Administrative Sandbox Controls:</strong> These functions bypass standard election guards to allow resetting test fixtures during demonstrations or viva presentations. Do not use during a live student election.
+              </span>
+            </p>
+
+            <div className="dev-actions-grid">
+              <button
+                type="button"
+                onClick={handleResetVotesOnly}
+                disabled={processing}
+                className="dev-btn dev-btn--warning"
+              >
+                {processing ? "Executing..." : "Delete All Vote Documents"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResetUserVotingOnly}
+                disabled={processing}
+                className="dev-btn dev-btn--warning"
+              >
+                {processing ? "Executing..." : "Clear User 'Already Voted' Flags"}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleFullTestingReset}
+                disabled={processing}
+                className="dev-btn dev-btn--danger"
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px" }}
+              >
+                <Flame size={15} />
+                <span>{processing ? "Executing..." : "Full Reset (Votes + Users + Election)"}</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </>
   );
 }

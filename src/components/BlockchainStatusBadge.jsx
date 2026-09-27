@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { Activity, FileText, Sun, Moon, Wallet, AlertTriangle } from "lucide-react";
 import blockchainService from "../blockchain/blockchainService";
-import { useTheme } from "../context/ThemeContext";
+import { useTheme } from "../hooks/useTheme";
 
 export default function BlockchainStatusBadge() {
   const { theme, toggleTheme } = useTheme();
@@ -65,84 +66,106 @@ export default function BlockchainStatusBadge() {
 
   return (
     <div style={{
-      background: theme === "dark" 
-        ? "linear-gradient(135deg, #1e293b 0%, #0f172a 100%)" 
-        : "linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)",
-      color: "var(--text-primary)",
-      padding: "8px 16px",
-      borderRadius: "12px",
-      fontSize: "0.85rem",
+      backgroundColor: "var(--bg-surface)",
+      border: "1px solid var(--border-color)",
+      borderRadius: "var(--radius-default)",
+      padding: "8px 14px",
+      fontSize: "0.8125rem",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
       flexWrap: "wrap",
-      gap: "12px",
-      border: "1px solid var(--border-color)",
-      boxShadow: "var(--card-shadow)",
-      transition: "background 0.3s ease, border-color 0.3s ease, color 0.3s ease"
+      gap: "10px",
+      boxShadow: "none"
     }}>
       {/* Left: Chain Status */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
         <span style={{
-          width: "10px",
-          height: "10px",
-          borderRadius: "50%",
-          backgroundColor: "#10b981",
-          boxShadow: "0 0 8px #10b981",
+          width: "6px",
+          height: "6px",
+          borderRadius: "var(--radius-full)",
+          backgroundColor: "#22C55E",
+          boxShadow: "0 0 6px #22C55E",
           display: "inline-block"
         }} />
-        <span style={{ fontWeight: 600 }}>EVM Blockchain Active</span>
-        <span style={{ color: "var(--text-muted)" }}>|</span>
-        <span style={{ color: "#38bdf8", fontWeight: 500 }}>Chain ID: {walletInfo.chainId}</span>
+        <span style={{
+          fontFamily: "var(--font-headline)",
+          fontSize: "1rem",
+          letterSpacing: "0.04em",
+          color: "var(--text-primary)"
+        }}>
+          EVM ACTIVE
+        </span>
+        <span style={{ color: "var(--border-color)" }}>|</span>
+        <span style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "0.75rem",
+          color: "var(--accent-secondary)",
+          fontWeight: 600
+        }}>
+          CHAIN #{walletInfo.chainId}
+        </span>
       </div>
 
       {/* Right: Actions, Theme Switcher & Wallet */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
         <Link
           to="/blockchain-explorer"
           style={{
-            color: theme === "dark" ? "#67e8f9" : "#0284c7",
+            color: "var(--accent-secondary)",
             textDecoration: "none",
             fontWeight: 600,
+            fontSize: "0.75rem",
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
             display: "inline-flex",
             alignItems: "center",
-            gap: "4px"
+            gap: "5px",
+            padding: "5px 10px",
+            border: "1px solid var(--border-color)",
+            borderRadius: "var(--radius-default)",
+            background: "var(--bg-elevated)"
           }}
         >
-          ⛓️ Audit Ledger
+          <FileText size={13} />
+          <span>Audit Ledger</span>
         </Link>
 
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
           style={{
-            background: theme === "dark" ? "rgba(255, 255, 255, 0.08)" : "rgba(0, 0, 0, 0.06)",
+            background: "var(--bg-elevated)",
             border: "1px solid var(--border-color)",
-            color: "var(--text-primary)",
-            padding: "5px 12px",
-            borderRadius: "999px",
+            color: "var(--text-secondary)",
+            padding: "5px 10px",
+            borderRadius: "var(--radius-default)",
             cursor: "pointer",
-            fontSize: "0.8rem",
+            fontSize: "0.75rem",
             fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
             display: "inline-flex",
             alignItems: "center",
             gap: "5px",
-            boxShadow: "none",
-            transition: "all 0.2s ease"
+            minHeight: "32px"
           }}
           title={`Switch to ${theme === "dark" ? "Light" : "Dark"} Mode`}
         >
-          {theme === "dark" ? "🌙 Dark" : "☀️ Light"}
+          {theme === "dark" ? <Sun size={13} /> : <Moon size={13} />}
+          <span>{theme === "dark" ? "Light" : "Dark"}</span>
         </button>
 
         {walletInfo.isConnected ? (
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{
-              background: theme === "dark" ? "#334155" : "#e2e8f0",
+              background: "var(--bg-elevated)",
+              border: "1px solid var(--border-color)",
               padding: "4px 8px",
-              borderRadius: "6px",
-              fontFamily: "monospace",
-              color: theme === "dark" ? "#a7f3d0" : "#065f46",
+              borderRadius: "var(--radius-xs)",
+              fontFamily: "var(--font-mono)",
+              color: "#4ADE80",
+              fontSize: "0.75rem",
               fontWeight: 600
             }}>
               {formatAddress(walletInfo.address)}
@@ -152,41 +175,46 @@ export default function BlockchainStatusBadge() {
               style={{
                 background: "transparent",
                 border: "1px solid var(--border-color)",
-                color: "var(--text-secondary)",
-                padding: "3px 8px",
-                borderRadius: "5px",
+                color: "var(--text-muted)",
+                padding: "4px 8px",
+                borderRadius: "var(--radius-default)",
                 cursor: "pointer",
                 fontSize: "0.75rem",
-                boxShadow: "none"
+                minHeight: "30px"
               }}
             >
-              Revert Demo
+              Revert
             </button>
           </div>
         ) : (
           <button
             onClick={handleConnectWallet}
             disabled={connecting}
+            className="btn btn-primary"
             style={{
-              background: "linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)",
-              color: "white",
-              border: "none",
-              padding: "5px 12px",
-              borderRadius: "6px",
-              cursor: "pointer",
-              fontWeight: 600,
-              fontSize: "0.8rem",
-              boxShadow: "0 2px 8px rgba(99, 102, 241, 0.3)"
+              minHeight: "32px",
+              padding: "4px 10px",
+              fontSize: "0.75rem"
             }}
           >
-            {connecting ? "Connecting..." : "🦊 Connect MetaMask"}
+            <Wallet size={13} />
+            <span>{connecting ? "Connecting..." : "Connect MetaMask"}</span>
           </button>
         )}
       </div>
 
       {error && (
-        <div style={{ width: "100%", color: "#f87171", fontSize: "0.75rem" }}>
-          ⚠️ {error}
+        <div style={{
+          width: "100%",
+          color: "var(--accent-error)",
+          fontSize: "0.75rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "6px",
+          marginTop: "4px"
+        }}>
+          <AlertTriangle size={13} />
+          <span>{error}</span>
         </div>
       )}
     </div>
