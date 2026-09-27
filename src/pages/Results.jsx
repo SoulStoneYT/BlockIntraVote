@@ -167,19 +167,20 @@ export default function Results() {
           <div
             key={result.positionId}
             style={{
-              border: "1px solid #e3e7ef",
-              borderRadius: "10px",
+              border: "1px solid var(--border-color)",
+              borderRadius: "16px",
               padding: "20px",
               marginBottom: "20px",
-              backgroundColor: "#fff",
-              boxShadow: "0 2px 4px rgba(0,0,0,0.05)"
+              backgroundColor: "var(--bg-card)",
+              boxShadow: "var(--card-shadow)"
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: "0 0 6px", fontSize: "1.2rem" }}>{result.positionTitle}</h3>
+              <h3 style={{ margin: "0 0 6px", fontSize: "1.2rem", color: "var(--text-primary)" }}>{result.positionTitle}</h3>
               <span style={{
-                background: "#f1f5f9",
-                color: "#475569",
+                background: "var(--bg-surface)",
+                color: "var(--text-secondary)",
+                border: "1px solid var(--border-color)",
                 padding: "4px 10px",
                 borderRadius: "12px",
                 fontSize: "0.8rem",
@@ -193,20 +194,21 @@ export default function Results() {
               <div
                 style={{
                   padding: "12px 16px",
-                  borderRadius: "8px",
-                  backgroundColor: "#ecfdf5",
-                  border: "1px solid #6ee7b7",
-                  margin: "12px 0 16px"
+                  borderRadius: "10px",
+                  backgroundColor: "rgba(16, 185, 129, 0.12)",
+                  border: "1px solid #10b981",
+                  margin: "12px 0 16px",
+                  color: "var(--text-primary)"
                 }}
               >
                 🏆 <strong>Winner:</strong> {result.winner.name} ({result.winner.party}) —{" "}
-                <strong>{result.winner.voteCount}</strong> votes
-                <span style={{ marginLeft: "10px", fontSize: "0.8rem", color: "#047857", fontWeight: 600 }}>
+                <strong style={{ color: "#10b981" }}>{result.winner.voteCount}</strong> votes
+                <span style={{ marginLeft: "10px", fontSize: "0.8rem", color: "#38bdf8", fontWeight: 600 }}>
                   [On-Chain: {onChainCounts[result.winner.candidateId] ?? result.winner.voteCount}]
                 </span>
               </div>
             ) : (
-              <p>No candidates for this position.</p>
+              <p style={{ color: "var(--text-secondary)" }}>No candidates for this position.</p>
             )}
 
             {result.standings.length > 0 && (
@@ -218,24 +220,25 @@ export default function Results() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      padding: "8px 12px",
-                      borderRadius: "6px",
-                      background: "#f8fafc",
-                      marginBottom: "6px",
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      background: "var(--bg-surface)",
+                      border: "1px solid var(--border-color)",
+                      marginBottom: "8px",
                       fontSize: "0.9rem"
                     }}
                   >
                     <div>
-                      <strong>{entry.name}</strong>{" "}
-                      <span style={{ color: "#64748b" }}>({entry.party})</span>
+                      <strong style={{ color: "var(--text-primary)" }}>{entry.name}</strong>{" "}
+                      <span style={{ color: "var(--text-secondary)" }}>({entry.party})</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                      <span style={{ fontWeight: 700, color: "#1e293b" }}>
+                      <span style={{ fontWeight: 700, color: "var(--text-primary)" }}>
                         {entry.voteCount} votes
                       </span>
                       <span style={{
-                        background: "#dbeafe",
-                        color: "#1e40af",
+                        background: "rgba(56, 189, 248, 0.15)",
+                        color: "#38bdf8",
                         padding: "2px 8px",
                         borderRadius: "4px",
                         fontSize: "0.75rem",
@@ -250,6 +253,7 @@ export default function Results() {
             )}
           </div>
         ))
+
       )}
     </div>
   );

@@ -77,7 +77,7 @@ export default function BlockchainExplorer() {
       margin: "0 auto",
       padding: "24px 16px",
       fontFamily: "system-ui, -apple-system, sans-serif",
-      color: "#0f172a"
+      color: "var(--text-primary)"
     }}>
       {/* Navigation & Header */}
       <div style={{
@@ -93,13 +93,15 @@ export default function BlockchainExplorer() {
             onClick={() => navigate(-1)}
             style={{
               padding: "6px 14px",
-              background: "#e2e8f0",
-              border: "none",
+              background: "var(--bg-card)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border-color)",
               borderRadius: "6px",
               cursor: "pointer",
               fontWeight: 600,
               fontSize: "0.85rem",
-              marginBottom: "8px"
+              marginBottom: "8px",
+              boxShadow: "none"
             }}
           >
             ← Back
@@ -107,7 +109,7 @@ export default function BlockchainExplorer() {
           <h1 style={{ margin: 0, fontSize: "1.75rem", display: "flex", alignItems: "center", gap: "8px" }}>
             ⛓️ Blockchain Ledger & Audit Explorer
           </h1>
-          <p style={{ margin: "4px 0 0", color: "#64748b", fontSize: "0.95rem" }}>
+          <p style={{ margin: "4px 0 0", color: "var(--text-secondary)", fontSize: "0.95rem" }}>
             Real-time, cryptographically verified ballot transactions executed on Ethereum EVM Smart Contract.
           </p>
         </div>
@@ -138,12 +140,13 @@ export default function BlockchainExplorer() {
         marginBottom: "28px"
       }}>
         <div style={{
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
           borderRadius: "12px",
-          padding: "16px"
+          padding: "16px",
+          boxShadow: "var(--card-shadow)"
         }}>
-          <div style={{ fontSize: "0.8rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
             Smart Contract
           </div>
           <div style={{
@@ -151,7 +154,7 @@ export default function BlockchainExplorer() {
             fontWeight: 700,
             marginTop: "6px",
             fontFamily: "monospace",
-            color: "#1e293b",
+            color: "var(--text-primary)",
             wordBreak: "break-all"
           }}>
             {contractConfig.address || "0x5FbDB2315678afecb367f032d93F642f64180aa3"}
@@ -162,10 +165,11 @@ export default function BlockchainExplorer() {
               marginTop: "6px",
               background: "none",
               border: "none",
-              color: "#3b82f6",
+              color: "#38bdf8",
               cursor: "pointer",
               fontSize: "0.75rem",
-              padding: 0
+              padding: 0,
+              boxShadow: "none"
             }}
           >
             📋 Copy Contract Address
@@ -173,32 +177,34 @@ export default function BlockchainExplorer() {
         </div>
 
         <div style={{
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
           borderRadius: "12px",
-          padding: "16px"
+          padding: "16px",
+          boxShadow: "var(--card-shadow)"
         }}>
-          <div style={{ fontSize: "0.8rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
             Consensus & Network
           </div>
-          <div style={{ fontSize: "1.25rem", fontWeight: 700, marginTop: "6px", color: "#059669" }}>
+          <div style={{ fontSize: "1.25rem", fontWeight: 700, marginTop: "6px", color: "#10b981" }}>
             EVM Localhost (31337)
           </div>
-          <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "4px" }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", marginTop: "4px" }}>
             Solidity ^0.8.20 • Hardhat
           </div>
         </div>
 
         <div style={{
-          background: "#f8fafc",
-          border: "1px solid #e2e8f0",
+          background: "var(--bg-card)",
+          border: "1px solid var(--border-color)",
           borderRadius: "12px",
-          padding: "16px"
+          padding: "16px",
+          boxShadow: "var(--card-shadow)"
         }}>
-          <div style={{ fontSize: "0.8rem", color: "#64748b", textTransform: "uppercase", fontWeight: 700 }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", textTransform: "uppercase", fontWeight: 700 }}>
             Total On-Chain Ballots
           </div>
-          <div style={{ fontSize: "1.75rem", fontWeight: 800, marginTop: "4px", color: "#2563eb" }}>
+          <div style={{ fontSize: "1.75rem", fontWeight: 800, marginTop: "4px", color: "#38bdf8" }}>
             {totalVotes}
           </div>
           <div style={{ fontSize: "0.8rem", color: "#10b981", marginTop: "2px" }}>
@@ -206,6 +212,7 @@ export default function BlockchainExplorer() {
           </div>
         </div>
       </div>
+
 
       {/* Interactive Vote Verification Box */}
       <div style={{
@@ -344,10 +351,10 @@ export default function BlockchainExplorer() {
           <div style={{
             textAlign: "center",
             padding: "40px",
-            background: "#f8fafc",
+            background: "var(--bg-card)",
             borderRadius: "12px",
-            border: "1px dashed #cbd5e1",
-            color: "#64748b"
+            border: "1px dashed var(--border-color)",
+            color: "var(--text-secondary)"
           }}>
             No ballots have been mined into the blockchain yet. 
             Cast your first vote in the voting session to generate a block!
@@ -355,9 +362,9 @@ export default function BlockchainExplorer() {
         )}
 
         {auditLogs.length > 0 && (
-          <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "10px" }}>
+          <div style={{ overflowX: "auto", border: "1px solid var(--border-color)", borderRadius: "10px", boxShadow: "var(--card-shadow)" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem", textAlign: "left" }}>
-              <thead style={{ background: "#f1f5f9", borderBottom: "1px solid #e2e8f0" }}>
+              <thead style={{ background: "var(--bg-surface)", borderBottom: "1px solid var(--border-color)", color: "var(--text-secondary)" }}>
                 <tr>
                   <th style={{ padding: "12px" }}>Block #</th>
                   <th style={{ padding: "12px" }}>Position</th>
@@ -369,17 +376,17 @@ export default function BlockchainExplorer() {
               </thead>
               <tbody>
                 {auditLogs.map((log, index) => (
-                  <tr key={index} style={{ borderBottom: "1px solid #f1f5f9", background: index % 2 === 0 ? "#ffffff" : "#f8fafc" }}>
-                    <td style={{ padding: "12px", fontWeight: 700, color: "#2563eb", fontFamily: "monospace" }}>
+                  <tr key={index} style={{ borderBottom: "1px solid var(--border-color)", background: index % 2 === 0 ? "var(--bg-card)" : "var(--bg-surface)" }}>
+                    <td style={{ padding: "12px", fontWeight: 700, color: "#38bdf8", fontFamily: "monospace" }}>
                       #{log.blockNumber}
                     </td>
-                    <td style={{ padding: "12px", fontWeight: 600 }}>
+                    <td style={{ padding: "12px", fontWeight: 600, color: "var(--text-primary)" }}>
                       {log.positionId}
                     </td>
                     <td style={{ padding: "12px" }}>
                       <span style={{
-                        background: "#e0e7ff",
-                        color: "#3730a3",
+                        background: "rgba(56, 189, 248, 0.15)",
+                        color: "#38bdf8",
                         padding: "3px 8px",
                         borderRadius: "4px",
                         fontWeight: 600
@@ -387,16 +394,16 @@ export default function BlockchainExplorer() {
                         {log.candidateId}
                       </span>
                     </td>
-                    <td style={{ padding: "12px", fontFamily: "monospace", color: "#64748b" }}>
+                    <td style={{ padding: "12px", fontFamily: "monospace", color: "var(--text-secondary)" }}>
                       {log.voterHash ? `${log.voterHash.substring(0, 10)}...${log.voterHash.substring(log.voterHash.length - 8)}` : "N/A"}
                     </td>
-                    <td style={{ padding: "12px", color: "#64748b" }}>
+                    <td style={{ padding: "12px", color: "var(--text-secondary)" }}>
                       {new Date(log.timestamp).toLocaleTimeString()}
                     </td>
                     <td style={{ padding: "12px" }}>
                       <span style={{
-                        background: "#dcfce7",
-                        color: "#166534",
+                        background: "rgba(16, 185, 129, 0.15)",
+                        color: "#10b981",
                         padding: "3px 8px",
                         borderRadius: "12px",
                         fontSize: "0.75rem",
@@ -415,3 +422,4 @@ export default function BlockchainExplorer() {
     </div>
   );
 }
+

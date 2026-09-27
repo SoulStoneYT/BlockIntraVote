@@ -179,7 +179,25 @@ export default function Login() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <h2>IntraaVote Login</h2>
+          <div style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            background: "rgba(56, 189, 248, 0.12)",
+            color: "#38bdf8",
+            padding: "4px 12px",
+            borderRadius: "999px",
+            fontSize: "0.78rem",
+            fontWeight: 700,
+            marginBottom: "12px",
+            letterSpacing: "0.05em"
+          }}>
+            ⛓️ ETHEREUM VERIFIED BALLOT
+          </div>
+          <h2>IntraVote Login</h2>
+          <p className="login-subtitle">
+            Enter your college credentials to securely authenticate and access the decentralized ballot.
+          </p>
         </div>
 
         <div className="field-card">
@@ -188,40 +206,46 @@ export default function Login() {
             <input
               id="name"
               type="text"
-              placeholder="Full Name"
+              placeholder="e.g. John Doe"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              autoComplete="name"
             />
           </div>
         </div>
 
         <div className="field-card">
-          <label className="field-label" htmlFor="enrollment">Student ID</label>
+          <label className="field-label" htmlFor="enrollment">Student ID / Roll No</label>
           <div className="input-group">
             <input
               id="enrollment"
               type="text"
-              placeholder="Student ID"
+              placeholder="e.g. 21102B0001"
               value={enrollment}
               onChange={(e) => setEnrollment(e.target.value)}
+              autoComplete="username"
             />
           </div>
         </div>
 
         <div className="field-card">
-          <label className="field-label" htmlFor="email">Email Address</label>
+          <label className="field-label" htmlFor="email">College Email Address</label>
           <div className="input-group">
             <input
               id="email"
               type="email"
-              placeholder="College Email"
+              placeholder="e.g. student@nhitm.ac.in"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
             />
           </div>
         </div>
 
-        <button className="primary-btn" onClick={handleLogin}>Continue</button>
+        <button className="primary-btn" onClick={handleLogin}>
+          Authenticate & Enter Ballot →
+        </button>
+
       </div>
     </div>
   );
