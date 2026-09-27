@@ -1,4 +1,8 @@
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
+import { auth } from "./firebase";
+import { onAuthStateChanged, signOut } from "firebase/auth";
+import { isValidCollegeEmail } from "./utils/authUtils";
 import Login from "./pages/login";
 import Admin from "./pages/Admin";
 import Vote from "./pages/Vote";
@@ -14,6 +18,17 @@ import BlockchainStatusBadge from "./components/BlockchainStatusBadge";
 import { ThemeProvider } from "./context/ThemeContextProvider";
 
 function App() {
+  // Global domain security guard: Any unauthorized user session is immediately evicted
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (user && !isValidCollegeEmail(user.email)) {
+        console.warn("Global guard: Evicting unauthorized domain account:", user.email);
+        await signOut(auth);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <ThemeProvider>
       <div style={{ minHeight: "100vh", backgroundColor: "var(--bg-primary)", color: "var(--text-primary)" }}>

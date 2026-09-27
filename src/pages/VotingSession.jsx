@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { db, auth } from "../firebase";
+import { signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, addDoc, collection, query, where, getDocs, onSnapshot } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { Pause, AlertTriangle, Clock, ShieldCheck } from "lucide-react";
@@ -7,6 +8,7 @@ import ElectionTimer from "../components/ElectionTimer";
 import CandidateCard from "../components/CandidateCard";
 import useNotification from "../hooks/useNotification";
 import blockchainService from "../blockchain/blockchainService";
+import { isValidCollegeEmail } from "../utils/authUtils";
 
 const TOTAL_TIME = 600; // 10 minutes in seconds
 
@@ -61,6 +63,12 @@ export default function VotingSession() {
     const initializeSession = async () => {
       const user = auth.currentUser;
       if (!user) {
+        navigate("/");
+        return;
+      }
+
+      if (!isValidCollegeEmail(user.email)) {
+        await signOut(auth);
         navigate("/");
         return;
       }

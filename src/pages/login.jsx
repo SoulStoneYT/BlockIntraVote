@@ -3,12 +3,14 @@ import { auth, db } from "../firebase";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signOut
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { ShieldCheck, ArrowRight, Lock } from "lucide-react";
 import useNotification from "../hooks/useNotification";
+import { isValidCollegeEmail } from "../utils/authUtils";
 
 const adminEmails = [
   "adityachaudhari237@nhitm.ac.in",
@@ -41,6 +43,14 @@ export default function Login() {
       if (user) {
         if (!isOnline()) {
           showNotification("You are offline. Please connect to the internet and reload the page.", "warning");
+          return;
+        }
+
+        // Strict validation: Reject any user session not from @nhitm.ac.in
+        if (!isValidCollegeEmail(user.email)) {
+          console.warn("Unauthorized domain detected, signing out:", user.email);
+          await signOut(auth);
+          showNotification("Access restricted: Only official college email IDs ending in @nhitm.ac.in are allowed.", "error");
           return;
         }
 
@@ -129,12 +139,17 @@ export default function Login() {
     if (e) e.preventDefault();
     if (authenticating) return;
 
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
     const cleanEnrollment = enrollment.trim();
     const cleanName = name.trim();
 
     if (!cleanName || !cleanEnrollment || !cleanEmail) {
       showNotification("Please fill in all mandatory fields.", "error");
+      return;
+    }
+
+    if (!isValidCollegeEmail(cleanEmail)) {
+      showNotification("Access Denied: Only official college emails ending in @nhitm.ac.in are permitted. Personal emails are strictly prohibited.", "error");
       return;
     }
 
@@ -275,7 +290,7 @@ export default function Login() {
 
           <div className="field-card">
             <label className="field-label" htmlFor="email">
-              Collegiate Email Address <span style={{ color: "var(--accent-error)" }} aria-hidden="true">*</span>
+              Collegiate Email Address (@nhitm.ac.in) <span style={{ color: "var(--accent-error)" }} aria-hidden="true">*</span>
             </label>
             <input
               id="email"
@@ -286,10 +301,19 @@ export default function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               autoComplete="email"
+              style={{
+                borderColor: email.trim() && !isValidCollegeEmail(email.trim()) ? "var(--accent-error)" : undefined
+              }}
             />
-            <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
-              Institutional domain emails only (.ac.in / .edu).
-            </p>
+            {email.trim() && !isValidCollegeEmail(email.trim()) ? (
+              <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "var(--accent-error)", fontWeight: 500 }}>
+                ⚠️ Unauthorized domain. Only @nhitm.ac.in emails are allowed.
+              </p>
+            ) : (
+              <p style={{ margin: "4px 0 0", fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                Institutional domain required: @nhitm.ac.in only.
+              </p>
+            )}
           </div>
 
           <button

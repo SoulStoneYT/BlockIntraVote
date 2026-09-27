@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
+import { signOut } from "firebase/auth";
 import { doc, getDoc, updateDoc, serverTimestamp, onSnapshot } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { CheckCircle2, Pause, XCircle, Clock, ArrowRight } from "lucide-react";
 import ElectionTimer from "../components/ElectionTimer";
 import useNotification from "../hooks/useNotification";
+import { isValidCollegeEmail } from "../utils/authUtils";
 
 export default function StartVoting() {
   const [loading, setLoading] = useState(false);
@@ -19,6 +21,12 @@ export default function StartVoting() {
     const checkUserStatus = async () => {
       const user = auth.currentUser;
       if (!user) {
+        navigate("/");
+        return;
+      }
+
+      if (!isValidCollegeEmail(user.email)) {
+        await signOut(auth);
         navigate("/");
         return;
       }

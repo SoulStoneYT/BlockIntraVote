@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { db, auth } from "../firebase";
+import { signOut } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { UserCheck, ArrowRight } from "lucide-react";
 import useNotification from "../hooks/useNotification";
+import { isValidCollegeEmail } from "../utils/authUtils";
 
 const departments = [
   "Computer Science",
@@ -33,6 +35,12 @@ export default function CompleteProfile() {
     const checkUserProfile = async () => {
       const user = auth.currentUser;
       if (!user) {
+        navigate("/");
+        return;
+      }
+
+      if (!isValidCollegeEmail(user.email)) {
+        await signOut(auth);
         navigate("/");
         return;
       }
